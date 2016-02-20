@@ -1,5 +1,6 @@
 package wedro22.mrproper;
 
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +21,7 @@ import java.nio.file.StandardOpenOption;
  * Поддерживаемые типы Object: Integer, Double, String, Boolean. 
  * Иные типы конвертируются toString.
  * <p>
- * Файл настроек имеет вид например:
+ * Файл настроек, например Test.properties имеет вид:
  * <pre>
  *     S:str=qwerty
  *     B:boo=true
@@ -31,10 +32,36 @@ import java.nio.file.StandardOpenOption;
  * <pre>
  *     Тип:Ключ=Значение
  * </pre>
- * При неверной форме записи строка игнорируется
- * @since 1.7
+ * При неверной форме записи строка игнорируется.
+ * Пример использования класса:
+ * <pre>
+ *      MrProper mrProp = new MrProper();
+ *      
+ *      //Настройки по умолчанию
+ *      mrProp.put("name", "test");
+ *      mrProp.put("Pi", (Double)3.14);
+ *      mrProp.put("boo", (Boolean)false);
+ *      
+ *      //Загрузка настроек из файла (при совпадении ключей в Test.properties
+ *      //и mrProp, заменит в нем настройки
+ *      mrProp.compareMap(mrProp.getLoadMap("Test.properties"));
+ *      
+ *      //Вывод содержимого класса MrProper
+ *      System.out.println(mrProp.toStringAdvanced());
+ *      // Выведет:     Boolean boo = true
+ *      //              String name = test
+ *      //              Double Pi = 3.14159
+ *      
+ *      //Сохранение настроек в файл.
+ *      mrProp.save("Test2.properties", null);
+ *      // Сохранит:    B:boo=true
+ *      //              S:name=test
+ *      //              D:Pi=3.14159
+ * </pre>
  * @author wedro22
  * @author копипаста
+ * @version 2.0
+ * @since 1.7
  */
 public class MrProper{
     private Map<String, Object> map=new HashMap<>();
@@ -62,6 +89,10 @@ public class MrProper{
             return null;
         }
     }
+
+    /**
+     * @return int количество пар Ключ = Объект 
+     */
     public int getSize(){
         return map.size();
     }
@@ -105,7 +136,7 @@ public class MrProper{
     /**
      *  Загружает properties из файла в Map [String, Object] класса
      * @param s Полный путь к файлу
-     * @return false, если ошибки
+     * @return false, если ошибки (файл не найден или нечитаем)
      */
     public boolean load(String s){
         Path path=Paths.get(s);
@@ -119,7 +150,8 @@ public class MrProper{
         }
         
         try {
-            List<String> list = Files.readAllLines(path, StandardCharsets.UTF_8);
+            List<String> list = Files.readAllLines(path, 
+                    StandardCharsets.UTF_8);
             for (String en : list)
                 getLine(en, map);
         } catch (IOException ex) {
@@ -133,7 +165,7 @@ public class MrProper{
      *  Возвращает загруженный properties из файла в формате 
      *  Map [String, Object]
      * @param s Полный путь к файлу
-     * @return null, если ошибки
+     * @return null, если ошибки (файл не найден или нечитаем)
      */
     public Map<String, Object> getLoadMap(String s){
         Path path=Paths.get(s);
@@ -189,7 +221,7 @@ public class MrProper{
      * @param s полный путь к файлу
      * @param mp Сохраняемый Map [String, Object]. Если null, то сохраняется
      * Map класса
-     * @return false, если ошибки, иначе - true
+     * @return false, если ошибки(категория вместо файла, файл нельзя записать)
      */
     public boolean save(String s, Map<String, Object> mp){
         Path path=Paths.get(s);
@@ -234,7 +266,12 @@ public class MrProper{
     }
 
     /**
-     *  ForEach
+     *  ForEach. Пример кода:
+     * <pre>
+     *  for (Entry en : mrProp.entrySet()){
+     *      System.out.println(en.getKey())
+     *  }
+     * </pre>
      * @return Map.entrySet() класса
      */
     public Iterable<Entry<String, Object>> entrySet() {
@@ -246,6 +283,7 @@ public class MrProper{
      * при наличии ключа в обоих Map
      * @param mDefolt значения по умолчанию
      * @param mChange новые значения
+     * @return Map [String, Object], не изменяя Map класса
      */
     public Map<String, Object> getCompareMap(Map<String, Object> mDefolt, 
             Map<String, Object> mChange){
@@ -260,7 +298,7 @@ public class MrProper{
     
     /**
      * Изменяет Map класса
-     * @param mChange изменяемые значения в текущий Map при наличии ключа
+     * @param mChange изменяемые значения в Map класса при наличии ключа
      * в обоих Map
      */
     public void compareMap(Map<String, Object> mChange){
