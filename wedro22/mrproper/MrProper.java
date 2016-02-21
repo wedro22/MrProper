@@ -1,18 +1,15 @@
 package wedro22.mrproper;
 
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Класс для работы с файлами настроек в формате Map [String, Object], имеет
@@ -53,14 +50,14 @@ import java.nio.file.StandardOpenOption;
  *      //              Double Pi = 3.14159
  *      
  *      //Сохранение настроек в файл.
- *      mrProp.save("Test2.properties", null);
+ *      mrProp.save("Test2.properties");
  *      // Сохранит:    B:boo=true
  *      //              S:name=test
  *      //              D:Pi=3.14159
  * </pre>
  * @author wedro22
  * @author копипаста
- * @version 2.0
+ * @version 2.1
  * @since 1.7
  */
 public class MrProper{
@@ -83,7 +80,7 @@ public class MrProper{
     
     public <T> T get(String name){
         try {
-            return ( T) map.get(name);
+            return (T) map.get(name);
         } catch (ClassCastException ex) {
             System.out.println(ex);
             return null;
@@ -178,19 +175,17 @@ public class MrProper{
             return null;
         }
         
-        Map<String, Object> retMap;
         try {
-            List<String> list = Files.readAllLines(path, 
+            List<String> list = Files.readAllLines(path,
                     StandardCharsets.UTF_8);
-            retMap=new HashMap(list.size());
+            Map<String, Object> retMap = new HashMap(list.size());
             for (String en : list)
                 getLine(en, retMap);
-             
+             return retMap;
         } catch (IOException ex) {
             System.err.println(ex);
             return null;
         }
-        return retMap;
     }
     private void getLine(String s, Map<String, Object> mp){
         if (s.length()<5) return;
@@ -225,17 +220,6 @@ public class MrProper{
      */
     public boolean save(String s, Map<String, Object> mp){
         Path path=Paths.get(s);
-        if(Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)){
-            System.err.println("File creating: It's directory, not file: %s");
-            return false;
-        }
-        try {
-            Files.deleteIfExists(path);
-            Files.createFile(path);
-        } catch (IOException ex) {
-            System.err.println(ex);
-            return false;
-        }
         if (!Files.isWritable(path)){
             System.err.println("File can not write: %s");
             return false;
@@ -255,14 +239,22 @@ public class MrProper{
             
             sb.append(en.getKey());
             sb.append("=");
-            sb.append(en.getValue().toString());
+            //sb.append(en.getValue().toString());
+            sb.append(String.valueOf(en.getValue()));
             sb.append(System.lineSeparator());
         }
-        try (BufferedWriter writer = Files.newBufferedWriter(path,
-                StandardCharsets.UTF_8, StandardOpenOption.WRITE)) {
-            writer.write(sb.toString());
-        } catch (Exception e) { System.err.println(e); }
+        try {
+            Files.write(path, sb.toString().getBytes(StandardCharsets.UTF_8)); 
+            //если не указывать опций, то по стандарту будет создан новый файл, 
+            //либо полностью перезаписан старый
+        } catch(Exception e) {
+            System.err.println(e);
+            return false;
+        }
         return true;
+    }
+    public boolean save(String s) {
+        return save(s, null);
     }
 
     /**
@@ -281,14 +273,14 @@ public class MrProper{
     /**
      * Возвращает Map [String, Object], внося изменения в mDefolt из mChange
      * при наличии ключа в обоих Map
-     * @param mDefolt значения по умолчанию
+     * @param mDefault значения по умолчанию
      * @param mChange новые значения
      * @return Map [String, Object], не изменяя Map класса
      */
-    public Map<String, Object> getCompareMap(Map<String, Object> mDefolt, 
+    public Map<String, Object> getCompareMap(Map<String, Object> mDefault, 
             Map<String, Object> mChange){
-        Map map0=mDefolt;
-        for(Entry<String, Object> en : mDefolt.entrySet()) {
+        Map<String, Object> map0 = new HashMap<>(mDefault); 
+        for(Entry<String, Object> en : mDefault.entrySet()) {
             if (mChange.containsKey(en.getKey())){
                 map0.put(en.getKey(), mChange.get(en.getKey()));
             }
@@ -302,13 +294,11 @@ public class MrProper{
      * в обоих Map
      */
     public void compareMap(Map<String, Object> mChange){
-        Map map0=map;
         for(Entry<String, Object> en : map.entrySet()) {
             if (mChange.containsKey(en.getKey())){
-                map0.put(en.getKey(), mChange.get(en.getKey()));
+                map.put(en.getKey(), mChange.get(en.getKey()));
             }
         }
-        map=map0;
     }
     
 }
